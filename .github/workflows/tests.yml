@@ -1,0 +1,154 @@
+name: Tests
+
+on:
+  push:
+    branches: [fledge/1.x]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    # Guards against a test that blocks on a service holding the runner for
+    # GitHub's six hour default.
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # The suite's primary connection. MariaDB is started for every entry
+        # (see services) because the fiber suites (tests/Fiber, tests/Contract)
+        # open their own fledge-mariadb-native connections and skip themselves
+        # when the server is missing, so the sqlite run needs it too.
+        #
+        # Upstream also ran MySQL 5.7/8 and PostgreSQL. They are dropped on
+        # purpose: the fork's fiber and contract suites only exercise MariaDB
+        # and SQLite, and Fledge apps run MariaDB.
+        db: [sqlite, mariadb]
+
+    name: PHP 8.5 - ${{ matrix.db }}
+
+    services:
+      mariadb:
+        # Floating tag that follows the newest MariaDB long-term-support release.
+        image: mariadb:lts
+        env:
+          # The fiber suites connect as root without a password on 127.0.0.1:3306.
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: '1'
+          MARIADB_DATABASE: pulse_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      # The Fledge Redis ingest tests (tests/Fiber/Ingests) and the upstream
+      # RedisTest talk to a Redis protocol server on 6379.
+      valkey:
+        image: valkey/valkey:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="valkey-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: dom, curl, libxml, mbstring, pdo, pdo_mysql, pdo_sqlite, sqlite3, redis, sockets, pcntl, zip, ffi
+          ini-values: error_reporting=E_ALL
+          tools: composer:v2
+          coverage: none
+
+      # RedisTest drives the server through redis-cli (MONITOR, FLUSHALL, XINFO).
+      # It works against Valkey as well.
+      - name: Install redis-cli
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends redis-tools
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-php8.5-${{ hashFiles('composer.json') }}
+          restore-keys: composer-${{ runner.os }}-php8.5-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      # Maps the matrix entry onto the DB_* variables Testbench's
+      # config/database.php reads. SQLite keeps Testbench's default database file.
+      - name: Configure database
+        run: |
+          if [ "${{ matrix.db }}" = "mariadb" ]; then
+            {
+              echo "DB_CONNECTION=mariadb"
+              echo "DB_HOST=127.0.0.1"
+              echo "DB_PORT=3306"
+              echo "DB_DATABASE=pulse_test"
+              echo "DB_USERNAME=root"
+              echo "DB_PASSWORD="
+            } >> "$GITHUB_ENV"
+          else
+            echo "DB_CONNECTION=sqlite" >> "$GITHUB_ENV"
+          fi
+
+      - name: Run tests
+        run: vendor/bin/pest
+        env:
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+
+  phpstan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Does not gate merges yet: phpstan.neon.dist (level 8, upstream baseline)
+    # currently reports 23 errors, all in the new src/Fiber overlay. Remove
+    # continue-on-error once they are fixed or baselined.
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: dom, curl, libxml, mbstring, pdo, pdo_sqlite, sqlite3, redis, sockets, pcntl, zip, ffi
+          tools: composer:v2
+          coverage: none
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-php8.5-${{ hashFiles('composer.json') }}
+          restore-keys: composer-${{ runner.os }}-php8.5-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
