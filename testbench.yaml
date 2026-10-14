@@ -1,0 +1,14 @@
+providers:
+  - Laravel\Pulse\PulseServiceProvider
+
+migrations:
+  - database/migrations
+
+workbench:
+  start: '/pulse'
+  install: true
+  welcome: false
+  build:
+    - asset-publish
+    - create-sqlite-db
+    - migrate-refresh
