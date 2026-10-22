@@ -120,10 +120,6 @@ jobs:
   phpstan:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Does not gate merges yet: phpstan.neon.dist (level 8, upstream baseline)
-    # currently reports 23 errors, all in the new src/Fiber overlay. Remove
-    # continue-on-error once they are fixed or baselined.
-    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v7

@@ -31,8 +31,8 @@
         "livewire/livewire": "^4.0",
         "nesbot/carbon": "^2.67|^3.0",
         "symfony/console": "^6.0|^7.0|^8.0",
-        "webpatser/fledge-fiber": "^13.22",
-        "webpatser/fledge-framework": "^13.34"
+        "webpatser/fledge-fiber": "^13.38",
+        "webpatser/fledge-framework": "^13.38"
     },
     "require-dev": {
         "guzzlehttp/guzzle": "^7.7|^8.0",

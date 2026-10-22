@@ -41,8 +41,10 @@ class FledgeRedisAdapter extends RedisAdapter
 
     /**
      * Create a new Fledge Redis adapter instance.
+     *
+     * Final because pipeline() builds the queueing adapter with `new static`.
      */
-    public function __construct(
+    final public function __construct(
         FledgeRedisConnection $connection,
         Repository $config,
     ) {
@@ -131,8 +133,7 @@ class FledgeRedisAdapter extends RedisAdapter
 
         $closure($pipeline);
 
-        $commands = $pipeline->queued;
-        $pipeline->queued = null;
+        $commands = $pipeline->takeQueued();
 
         if ($commands === []) {
             return [];
@@ -148,6 +149,24 @@ class FledgeRedisAdapter extends RedisAdapter
         ksort($results);
 
         return array_values($results);
+    }
+
+    /**
+     * Take the queued commands and leave pipeline mode.
+     *
+     * A method rather than an inline property read: the pipeline closure
+     * fills the queue behind PHPStan's back, which would otherwise keep
+     * treating it as the empty array assigned before the closure ran.
+     *
+     * @return list<array{list<string>, (Closure(mixed): mixed)|null}>
+     */
+    protected function takeQueued(): array
+    {
+        $queued = $this->queued ?? [];
+
+        $this->queued = null;
+
+        return $queued;
     }
 
     /**

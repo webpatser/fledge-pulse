@@ -47,7 +47,7 @@ class FiberPulse extends Pulse
      * Keyed on the fiber, never on fiber lifetime: Revolt reuses callback
      * fibers, so an entry is removed as soon as its depth returns to 0.
      *
-     * @var WeakMap<Fiber, int>
+     * @var WeakMap<Fiber<mixed, mixed, mixed, mixed>, int>
      */
     private WeakMap $fiberIgnoreDepths;
 
@@ -238,6 +238,11 @@ class FiberPulse extends Pulse
         return $fiber === null ? $this->mainIgnoreDepth : ($this->fiberIgnoreDepths[$fiber] ?? 0);
     }
 
+    /**
+     * Change the ignore() depth of the given fiber, or of the main context when null.
+     *
+     * @param  Fiber<mixed, mixed, mixed, mixed>|null  $fiber
+     */
     private function adjustIgnoreDepth(?Fiber $fiber, int $delta): void
     {
         if ($fiber === null) {

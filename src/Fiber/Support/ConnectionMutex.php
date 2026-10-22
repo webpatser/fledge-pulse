@@ -48,7 +48,7 @@ final class ConnectionMutex
      * The current holder of each mutex, keyed by connection name. A null
      * reference stands for the main context.
      *
-     * @var array<string, WeakReference<Fiber>|null>
+     * @var array<string, WeakReference<Fiber<mixed, mixed, mixed, mixed>>|null>
      */
     private static array $holders = [];
 
@@ -87,6 +87,7 @@ final class ConnectionMutex
 
         $lock = (self::$mutexes[$connection] ??= new LocalMutex)->acquire();
 
+        /** @var Fiber<mixed, mixed, mixed, mixed>|null $fiber */
         $fiber = Fiber::getCurrent();
 
         self::$holders[$connection] = $fiber === null ? null : WeakReference::create($fiber);

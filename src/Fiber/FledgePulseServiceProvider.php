@@ -4,6 +4,7 @@ namespace Laravel\Pulse\Fiber;
 
 use Fledge\Fiber\Redis\FledgeRedisConnection;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Pulse\Contracts\Ingest;
 use Laravel\Pulse\Contracts\Storage;
@@ -75,7 +76,7 @@ class FledgePulseServiceProvider extends ServiceProvider
      */
     protected function usesFledgeRedis(Application $app): bool
     {
-        return $app->make('redis')
+        return $app->make(RedisFactory::class)
             ->connection($app->make('config')->get('pulse.ingest.redis.connection'))
             instanceof FledgeRedisConnection;
     }

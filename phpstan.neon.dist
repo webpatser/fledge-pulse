@@ -3,6 +3,10 @@ includes:
 parameters:
   paths:
     - src
+    # Nothing in src uses the RemembersConcurrently trait (it is an opt-in
+    # for cards), so PHPStan would skip it as unused; the test fixture card
+    # gives it a class context to be analysed in.
+    - tests/Fiber/Livewire/Fixtures/RemembersConcurrentlyCard.php
   excludePaths:
     - src/Facades/Pulse.php
   level: 8

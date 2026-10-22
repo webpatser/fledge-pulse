@@ -3,28 +3,9 @@
 use Carbon\CarbonInterval;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Pulse\Facades\Pulse;
-use Laravel\Pulse\Fiber\Livewire\Concerns\RemembersConcurrently;
-use Laravel\Pulse\Livewire\Concerns\HasPeriod;
+use Tests\Fiber\Livewire\Fixtures\RemembersConcurrentlyCard;
 
 use function Fledge\Async\delay;
-
-/**
- * A minimal card using the trait the way a Pulse Livewire card would.
- */
-final class RemembersConcurrentlyCard
-{
-    use HasPeriod;
-    use RemembersConcurrently;
-
-    /**
-     * @param  array<array-key, Closure(CarbonInterval): mixed>  $queries
-     * @return array<array-key, array{0: mixed, 1: float, 2: string}>
-     */
-    public function many(array $queries, Closure|int $ttl = 5): array
-    {
-        return $this->rememberMany($queries, $ttl);
-    }
-}
 
 beforeEach(function () {
     config()->set('cache.default', 'array');
