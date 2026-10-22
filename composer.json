@@ -41,7 +41,7 @@
         "pestphp/pest": "^4.0",
         "pestphp/pest-plugin-laravel": "^4.0",
         "phpstan/phpstan": "^2.1.33",
-        "predis/predis": "^1.0|^2.0"
+        "predis/predis": "^3.7.0"
     },
     "replace": {
         "laravel/pulse": "self.version"
