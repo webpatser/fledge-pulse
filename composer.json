@@ -28,7 +28,7 @@
         "guzzlehttp/promises": "^1.0|^2.0|^3.0",
         "laravel/sentinel": "^1.0",
         "league/uri": "^7.5.1",
-        "livewire/livewire": "^4.0",
+        "livewire/livewire": "^4.4.8",
         "nesbot/carbon": "^2.67|^3.0",
         "symfony/console": "^6.0|^7.0|^8.0",
         "webpatser/fledge-fiber": "^13.38",
