@@ -35,7 +35,6 @@ class RedisAdapter
      */
     public function xadd(string $key, array $dictionary): string|Pipeline|PhpRedis|Relay
     {
-        /** @phpstan-ignore argument.type */
         return $this->handle([
             'XADD',
             $this->config->get('database.redis.options.prefix').$key,
